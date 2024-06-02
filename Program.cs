@@ -3,6 +3,7 @@ using Raylib_cs;
 using static Raylib_cs.Raylib;
 using rlImGui_cs;
 using ImGuiNET;
+using SpaceGame_RaylibCS;
 
 class Program
 {
@@ -14,33 +15,26 @@ class Program
     public static Color Blue2 = new Color(0, 65, 65, 255);
     
     private static Camera2D _camera;
+
+    private static Player _player;
+
+    private static Intro _intro;
     
-    private static float _shipAngleDegrees;
-    private static float _shipSpeed = 200f;
-    private static Vector2 _shipDirection = new(1,0);
-    private static Rectangle _shipSourceRect = new(0,0,0,0);
-    private static Rectangle _shipDestRect = new(0,0,0,0);
-    
-    private static Texture2D _texture;
-    private static Vector2 _textureOrigin = new();
-    private static Vector2 _texturePosition = new();
-    private static Vector2 _mousePosition = new();
     
     private static void Main()
     {
-        SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.VSyncHint | ConfigFlags.ResizableWindow | ConfigFlags.UndecoratedWindow);
+        SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.VSyncHint | ConfigFlags.ResizableWindow);
         InitWindow(ScreenWidth, ScreenHeight, "SpaceGame RaylibCS");
-        //SetTargetFPS(60);
+        SetTargetFPS(60);
+        
+        _player = new Player();
+        _intro = new Intro();
+        
 
-        _camera.Target = _texturePosition;
+        _camera.Target = new Vector2(0, 0);
         _camera.Zoom = 1f;
         _camera.Rotation = 0f;
-        
-        _texture = LoadTexture("Assets/Textures/ship1.png");
-        _texture.Height /= 4;
-        _texture.Width /= 4;
-        _textureOrigin = new Vector2(_texture.Width / 2f, _texture.Height / 2f);
-        _texturePosition = new Vector2(ScreenWidth / 2f, ScreenHeight / 2f);
+
         
         rlImGui.Setup(true);
         while (!WindowShouldClose())
@@ -65,20 +59,26 @@ class Program
 
     private static void ExitApp()
     {
-        UnloadTexture(_texture);
+        _player.Unload();
         rlImGui.Shutdown();
         CloseWindow();
     }
     
     private static void Update()
     {
-        HandleShipMovement();
+        _intro.Update();
+        
+        _player.Update();
     }
     
     private static void Draw2D()
     {
         BeginMode2D(_camera);
-        DrawTexturePro(_texture, _shipSourceRect, _shipDestRect, _textureOrigin, _shipAngleDegrees, Blue2);
+
+        _intro.Draw();
+        
+        _player.Draw();
+        
         EndMode2D();
     }
 
@@ -89,10 +89,15 @@ class Program
         if (ImGui.Begin("Debug window"))
         {
             ImGui.TextUnformatted("FPS: " + GetFPS());
-            ImGui.TextUnformatted("Ship position: " + _texturePosition);
-            ImGui.TextUnformatted("Ship rotation: " + _shipAngleDegrees);
-            ImGui.TextUnformatted("Ship dir: " + _shipDirection);
-
+            ImGui.TextUnformatted("Ship position: " + _player.Position);
+            ImGui.TextUnformatted("Ship rotation: " + _player.Rotation);
+            ImGui.TextUnformatted("Ship dir: " + _player.Direction);
+            ImGui.Separator();
+            if (ImGui.SliderFloat("Speed", ref _player.Speed, 0f, 500f))
+            {
+                _player.Speed = Math.Clamp(_player.Speed, 0f, 500f);
+            }
+            ImGui.Separator();
             if (ImGui.Button("Exit game"))
             {
                 ExitApp();
@@ -100,34 +105,5 @@ class Program
         }
         ImGui.End();
         rlImGui.End();
-    }
-    
-    private static void HandleShipMovement()
-    {
-        _mousePosition = GetMousePosition();
-        
-        _shipSourceRect.X = 0;
-        _shipSourceRect.Y = 0;
-        _shipSourceRect.Width = _texture.Width;
-        _shipSourceRect.Height = _texture.Height;
-        
-        _shipDestRect.X = _texturePosition.X;
-        _shipDestRect.Y = _texturePosition.Y;
-        _shipDestRect.Width = _texture.Width;
-        _shipDestRect.Height = _texture.Height;
-
-        var rads =
-            (float)Math.Atan2(_mousePosition.Y - _texturePosition.Y, _mousePosition.X - _texturePosition.X);
-        _shipAngleDegrees = rads * (180f / MathF.PI);
-        
-        
-
-        if (IsKeyDown(KeyboardKey.W))
-        {
-            _shipDirection.X = (float)Math.Cos(rads);
-            _shipDirection.Y = (float)Math.Sin(rads);
-            _shipDirection = Vector2.Normalize(_shipDirection); 
-            _texturePosition += _shipDirection * _shipSpeed * GetFrameTime();
-        }
     }
 }
