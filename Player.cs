@@ -12,7 +12,7 @@ public class Player
     public Vector2 Velocity = new();
     public Vector2 Direction = new(1,0);
     public float Speed = 200f;
-    public Vector2 Damping = new(0.95f, 0.95f);
+    public float Damping = 1.5f;
     
     private Vector2 _textureOrigin;
     private Rectangle _sourceRect = new(0,0,0,0);
@@ -68,7 +68,7 @@ public class Player
         }
         else
         {
-            Velocity = Vector2.Lerp(Velocity, Vector2.Zero, Damping.X * Raylib.GetFrameTime());
+            Velocity = Vector2.Lerp(Velocity, Vector2.Zero, Damping * Raylib.GetFrameTime());
         }
     }
     
